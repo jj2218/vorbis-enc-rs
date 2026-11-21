@@ -21,8 +21,8 @@ fmt-check:
     for m in fuzz/*/Cargo.toml; do cargo fmt --manifest-path "$m" --check; done
 
 lint: aotuv msrv
-    cargo clippy --workspace --all-targets --locked -- -D warnings
-    RUSTFLAGS="--cfg portable" CARGO_TARGET_DIR=target/portable cargo clippy $CODECS --all-targets --locked -- -D warnings
+    RUSTFLAGS="--cfg oracle" cargo clippy --workspace --all-targets --locked -- -D warnings
+    RUSTFLAGS="--cfg oracle --cfg portable" CARGO_TARGET_DIR=target/portable cargo clippy $CODECS --all-targets --locked -- -D warnings
     for m in fuzz/*/Cargo.toml; do cargo clippy --manifest-path "$m" --locked -- -D warnings; done
     cargo clippy -q $CODECS --lib --locked --target aarch64-unknown-linux-gnu -- -D warnings
     RUSTDOCFLAGS="-D warnings" cargo doc -q $CODECS --no-deps --locked
@@ -49,13 +49,7 @@ test-aarch64: lc3plus aotuv
 
 # Codec conformance, one summary line per run: each codec crate present, bit-exact vs its oracle (its conformance tests name the set: AMR the 3GPP vectors and reference C, LC3 liblc3 on the SIG operating points, Vorbis aoTuV's Ogg streams; pinned deviations counted, not failed)
 conform: lc3plus aotuv
-    @[ ! -d crates/amr-nb ] || cargo test -q --release -p amr-nb --test conformance -- --nocapture 2>&1 | grep -E "bit-exact|failing|mismatch|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/amr-wb ] || cargo test -q --release -p amr-wb --test conformance -- --nocapture 2>&1 | grep -E "bit-exact|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/amr-wb ] || cargo test -q --release -p amr-wb --test enc_conformance -- --nocapture 2>&1 | grep -E "bit-exact|bit sync|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/amr-wb ] || WB_STRESS_STREAMS=200 cargo test -q --release -p amr-wb --test vs_ref -- --nocapture 2>&1 | grep -E "bit-exact|differs|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/amr-wb ] || cargo test -q --release -p amr-wb --test enc_vs_ref -- --nocapture 2>&1 | grep -E "bit-exact|differs|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/lc3 ] || cargo test -q --release -p lc3 --test conformance -- --nocapture 2>&1 | grep -E "bit-exact|byte-identical|panicked|error" | sed "s/^\.*//" || true
-    @[ ! -d crates/vorbis-enc ] || cargo test -q --release -p vorbis-enc --lib analysis::vs_c -- --nocapture 2>&1 | grep -E "byte-identical|panicked|error" | sed "s/^\.*//" || true
+    @bash scripts/conform.sh
 
 # Decoder + encoder speed, Rust vs the legacy C (AMR: opencore -O3; LC3: liblc3 as distributions build it, -O3 -ffast-math, and strict; Vorbis: encoder only, aoTuV-Lancer, strict aoTuV and xiph's libvorbis), pinned to one core; µs/frame per mode (CRATE=<codec>, default the first present; BENCH=dec|enc; BENCH=all: every codec × side, the "all" lines (before/after a sweep); BENCH=stages: encoder and decoder µs/frame per stage, time attribution; BENCH=kern: ns/call per kernel, KERN=<substring> filters; AB=<ref>: ref vs working tree (B=<ref>: vs that ref; 3 reps per run), BENCH_MODE=<mode>: one mode only (each: per-mode table); with kern: min of 3 + ratio)
 bench: lc3plus aotuv
@@ -74,7 +68,7 @@ perf: lc3plus aotuv
 profile: lc3plus aotuv
     @bash scripts/profile.sh
 
-# Fuzz (nightly + cargo-fuzz, installed on first use; fuzz/<product>/), each codec vs its C oracle: AMR (nb_*, wb_*) the rfc4867 readers, the decoder and the encoder vs the 3GPP reference C; lc3_decode_vs_c: the LC3 decoder vs liblc3; vorbis_encode_vs_c: the Vorbis encoder vs aoTuV; vorbis_encode_api: any f32 and configuration, no panic, lewton decodes
+# Fuzz (nightly + cargo-fuzz, installed on first use; fuzz/<product>/), each codec vs its C oracle: AMR (nb_*, wb_*) the rfc4867 readers, the decoder and the encoder vs the 3GPP reference C; lc3_decode_vs_c, lc3_encode_vs_c: the LC3 decoder and encoder vs liblc3; lc3_api: any configuration, PCM and bytes, no panic; vorbis_encode_vs_c: the Vorbis encoder vs aoTuV; vorbis_encode_api: any f32 and configuration, no panic, lewton decodes
 [positional-arguments]
 fuzz target="all" seconds="60": aotuv
     @bash scripts/fuzz.sh "$1" "$2"

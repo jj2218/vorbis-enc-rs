@@ -114,7 +114,7 @@ fn round_f32(x: f64) -> f64 {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 #[allow(unsafe_code)]
 mod vs_c {
     use super::*;

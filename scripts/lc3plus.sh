@@ -13,8 +13,8 @@ ZIP=$DIR/ts_103634v010701p0.zip
 
 source scripts/fetch.sh
 fetch "$URL" "$SHA" "$ZIP"
-if [ ! -f "$DIR/.unpacked" ]; then
+# the extracted items' presence is the marker (a deleted wav/ is re-extracted)
+if ! ls "$DIR"/wav/thetest*.wav >/dev/null 2>&1; then
   python3 -I scripts/lc3plus_wav.py "$(realpath "$ZIP")" "$(realpath "$DIR")/wav"
-  touch "$DIR/.unpacked"
 fi
 echo "lc3plus: ok ($DIR/wav: $(ls "$DIR/wav" | wc -l) thetest*.wav; sha256 verified)"

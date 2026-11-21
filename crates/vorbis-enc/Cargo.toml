@@ -1,6 +1,6 @@
 [package]
 name = "vorbis-enc"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Vorbis encoder in pure Rust: a port of aoTuV, producing exactly the same files as aoTuV's reference build"
 keywords = ["vorbis", "ogg", "encoder", "audio", "aotuv"]
 categories = ["multimedia::audio", "multimedia::encoding", "encoding"]

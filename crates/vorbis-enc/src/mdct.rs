@@ -343,7 +343,7 @@ fn butterfly_32(x: &mut [f32]) {
     butterfly_16(&mut x[16..]);
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 mod vs_c {
     use super::*;
     use crate::testutil::{Rng, bits, signal};

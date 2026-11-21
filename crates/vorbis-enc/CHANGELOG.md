@@ -3,6 +3,12 @@
 One section per release, newest first. The release commit in the repository carries the
 section of each crate it releases.
 
+## 0.1.1 (2026-11-21)
+Fixed
+- `cargo test` from the published crate: the tests against aoTuV (dev-only, not published)
+  are compiled out there, so the crate's own tests, doc tests included, pass (0.1.0's failed to
+  compile). No change to the encoder.
+
 ## 0.1.0 (2026-11-20)
 First release: a Vorbis encoder, ported from aoTuV b6.03 (on libvorbis 1.3.7).
 - `EncoderBuilder` and `Encoder`: planar `f32` PCM in, an Ogg Vorbis stream out to any

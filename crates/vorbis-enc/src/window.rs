@@ -43,7 +43,7 @@ pub(crate) fn apply_window(
     d[rightend..n].fill(0.0);
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 #[allow(unsafe_code)]
 mod vs_c {
     use super::*;

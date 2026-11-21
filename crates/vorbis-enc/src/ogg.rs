@@ -178,7 +178,7 @@ impl OggStream {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 mod vs_c {
     use super::*;
     use aotuv_sys::{Mode, encode_packets, spike_pcm, thetest};

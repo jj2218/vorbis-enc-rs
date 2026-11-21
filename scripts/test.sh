@@ -19,10 +19,11 @@ trap 'rm -rf "$logs"' EXIT
 pkgs=$(for c in crates/*/; do c=${c%/}; c=${c#crates/}; [[ $c == *-sys ]] || printf -- '-p %s ' "$c"; done)
 # --cfg portable only changes crates with SIMD kernels (src/simd.rs): the rest would run twice
 simd=$(for c in crates/*/src/simd.rs; do [ -e "$c" ] || continue; c=${c#crates/}; printf -- '-p %s ' "${c%%/*}"; done)
-configs=("dispatch||target|--workspace")
-[ -z "$simd" ] || configs+=("portable|--cfg portable|target/portable|$simd")
+# --cfg oracle: the C-oracle unit tests in src/ (out of a published `.crate`: package-test.sh)
+configs=("dispatch|--cfg oracle|target|--workspace")
+[ -z "$simd" ] || configs+=("portable|--cfg oracle --cfg portable|target/portable|$simd")
 [ ! -d crates/amr-nb ] ||
-    configs+=("arrays|--cfg portable --cfg amr_nb_arrays|target/arrays|--release -p amr-nb --test conformance")
+    configs+=("arrays|--cfg oracle --cfg portable --cfg amr_nb_arrays|target/arrays|--release -p amr-nb --test conformance")
 runner=()
 if [ "${TARGET:-}" = aarch64 ]; then
     t=aarch64-unknown-linux-gnu
@@ -31,7 +32,7 @@ if [ "${TARGET:-}" = aarch64 ]; then
     export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
     export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
     export CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS=true
-    configs=("aarch64||target/aarch64|--release --target $t $pkgs")
+    configs=("aarch64|--cfg oracle|target/aarch64|--release --target $t $pkgs")
     runner=(qemu-aarch64 -L /usr/aarch64-linux-gnu)
 fi
 # build: every config's test binaries as "<config> <package dir> <executable>" lines
@@ -110,7 +111,7 @@ if [ ${#runner[@]} -gt 0 ]; then
     for p in "${pids[@]}"; do wait "$p" || rc=1; done
     exit $rc
 fi
-run "dispatch doc tests" "$logs/doc" cargo test --locked --workspace --doc -q &
+RUSTFLAGS="--cfg oracle" run "dispatch doc tests" "$logs/doc" cargo test --locked --workspace --doc -q &
 pids+=($!)
 for p in "${pids[@]}"; do wait "$p" || rc=1; done
 if $c_cached; then

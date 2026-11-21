@@ -17,7 +17,7 @@ missing_debug_implementations = "warn"
 # `--cfg portable` compiles out every crate's AVX2 dispatch (`src/simd.rs`);
 # `--cfg amr_nb_arrays` (AMR-NB) runs its SSE2 kernels' array forms (the non-x86 bodies) on x86; `just test`.
 # `--cfg codec_stages`: each codec's stage timers (`BENCH=stages just bench`).
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(portable)", "cfg(amr_nb_arrays)", "cfg(codec_stages)"] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(portable)", "cfg(amr_nb_arrays)", "cfg(codec_stages)", "cfg(oracle)"] }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }

@@ -6,7 +6,8 @@
 // (measured: `CFLAGS=-ffast-math` fails aotuv-sys's `spike_hashes`). `assert_strict` panics on
 // any final compiler argument that changes float results. `-mfma`/`-march=` stay allowed: with
 // contraction pinned off (`-ffp-contract=off`, every other contraction mode rejected here), the C
-// source never becomes an FMA, so the ISA flags only change speed.
+// source never becomes an FMA, so the ISA flags only change speed; but they also select a C
+// library's own SIMD code paths (liblc3's NEON kernels on aarch64): its build script checks that.
 
 /// Fails the build if `b`'s final compiler command could change float results, or if the
 /// target's float math is not the verified SSE2/AArch64 kind (x87 elsewhere is not strict).

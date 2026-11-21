@@ -6,6 +6,7 @@
 # of the "all" line (BENCH=enc by default; BENCH_MODE=<mode>: only that mode, e.g. 122), then
 # `B/A` of the median Rust/C ratios (> 1: B faster; the C drifts with temperature, the ratio
 # doesn't). BENCH_MODE=each: every mode in one run, then that per mode.
+# AB=<ref> COUNT=1 (lc3): per mode, instructions and cycles of the Rust side (see below).
 # AB=<ref> BENCH=kern: per kernel, min ns over 3 interleaved runs of each side, and B/A.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -88,6 +89,28 @@ if [ -n "${AB:-}" ]; then
         b=$(abs "$(build)" "$PWD")
     fi
     a=$(abs "$(cd "$src" && CARGO_TARGET_DIR="$OLDPWD/$ab" build)" "$PWD/$src")
+    # COUNT=1 (lc3; both trees with BENCH_IMPL): per mode (default the two points; BENCH_GRID=1:
+    # the 20-mode grid; MODES="8k2.5 48k10": those), the Rust side's user instructions and cycles
+    # (perf stat, P-core) minus the setup's (BENCH_IMPL=none), min of 3 interleaved runs, and B/A
+    # (< 1: B cheaper). Load-proof; noise ±1-2%.
+    if [ -n "${COUNT:-}" ]; then
+        ev=instructions:u,cycles:u
+        [ -d /sys/bus/event_source/devices/cpu_core ] && ev=cpu_core/instructions/u,cpu_core/cycles/u
+        grid=$(for d in 2.5 5 7.5 10; do for r in 8 16 24 32 48; do printf '%sk%s ' $r $d; done; done)
+        modes=${MODES:-$([ -n "${BENCH_GRID:-}" ] && echo "$grid" || echo "16k7.5 48k10")}
+        export BENCH_GRID=1  # every mode name resolves (the two default points are in the grid)
+        one() { BENCH_MODE=$2 BENCH_IMPL=$3 taskset -c "${BENCH_CPU:-2}" perf stat -x, -e "$ev" "$1" \
+            2>&1 >/dev/null | awk -F, '{v[NR] = $1} END {print v[1], v[2]}'; }
+        for m in $modes; do for _ in 1 2 3; do
+            echo "$m N $(one "$a" "$m" none)"; echo "$m A $(one "$a" "$m" rust)"; echo "$m B $(one "$b" "$m" rust)"
+        done; done | awk '{k = $1 " " $2; if (!(k in i) || $3 < i[k]) i[k] = $3; if (!(k in c) || $4 < c[k]) c[k] = $4
+                if (!($1 in s)) {s[$1] = 1; o[++n] = $1}}
+            END {printf "%-7s %8s %8s %6s | %8s %8s %6s\n", "mode", "A Minst", "B Minst", "B/A", "A Mcyc", "B Mcyc", "B/A"
+                for (j = 1; j <= n; j++) {m = o[j]; ia = i[m " A"] - i[m " N"]; ib = i[m " B"] - i[m " N"]
+                    ca = c[m " A"] - c[m " N"]; cb = c[m " B"] - c[m " N"]
+                    printf "%-7s %8.1f %8.1f %6.3f | %8.1f %8.1f %6.3f\n", m, ia / 1e6, ib / 1e6, ib / ia, ca / 1e6, cb / 1e6, cb / ca}}'
+        exit
+    fi
     [ -f "$a" ] && [ -x "$a" ] && [ -f "$b" ] || { echo "bench: AB build failed (does ${B:+$B or }$AB have the codec bench?)" >&2; exit 1; }
     if [ "${BENCH_MODE:-}" = each ]; then
         for r in 1 2 3; do for v in $(order $r); do

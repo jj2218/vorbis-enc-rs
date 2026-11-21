@@ -286,7 +286,7 @@ fn drftf1(n: usize, c: &mut [f32], ch: &mut [f32], wa: &[f32], ifac: &[i32; 32])
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 mod vs_c {
     use super::*;
     use crate::testutil::{Rng, bits, signal};

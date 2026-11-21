@@ -281,7 +281,7 @@ pub(crate) fn headers(ci: &CodecSetup) -> [Vec<u8>; 3] {
     [pack_info(ci), pack_comment(&[]), pack_books(ci)]
 }
 
-#[cfg(test)]
+#[cfg(all(test, oracle))]
 mod vs_c {
     use super::*;
     use crate::setup::SetupError;

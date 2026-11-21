@@ -27,8 +27,8 @@ for p in perf $(compgen -c perf_ | sort -uV); do
     "$p" stat -e task-clock true >/dev/null 2>&1 && { perf=$p; break; }
 done
 [ -n "$perf" ] || { echo "perf: no working perf (container: --cap-add=PERFMON, linux-perf; host: perf_event_paranoid <= 2)" >&2; exit 1; }
-ev=cycles:u; [ -d /sys/bus/event_source/devices/cpu_core ] && ev=cpu_core/cycles/u  # hybrid: P-core PMU
-for build in avx2 portable; do
+ev=cycles:u; [ -d /sys/bus/event_source/devices/cpu_core ] && ev=cpu_core/cycles/u; ev=${PERF_EV:-$ev}  # hybrid: P-core PMU
+for build in ${PERF_BUILDS:-avx2 portable}; do
     flags=${RUSTFLAGS:-} dir=$PWD/target
     [ $build = portable ] && flags="$flags --cfg portable" dir=$PWD/target/portable  # as just test/bench
     exe=$(RUSTFLAGS=$flags CARGO_TARGET_DIR=$dir cargo bench -p "$crate" --bench codec --no-run 2>&1 |
@@ -79,12 +79,18 @@ if not fn and shared:  # Rust and the C baseline both call them: a hint, not a r
     top3 = ", ".join(f"{f} {100 * n / max(samples, 1):.1f}%" for f, n in shared.most_common(3))
     print(f"  (+ {100 * sum(shared.values()) / max(samples, 1):.1f}% of samples in shared libraries, Rust and C callers: {top3})")
 ' "$exe" "${crate//-/_}" "$crate $side $build${BENCH_MODE:+ mode $BENCH_MODE}" "${TOP:-10}" "${FN:-}"
-    # C=1 (lc3): the same ranking for liblc3's distribution build (its renamed copy: the local
-    # copies of the oracle's global lc3_* symbols, by address range), to compare per stage.
+    # C=1 (lc3): the same ranking for liblc3's distribution build (its renamed copy, by address
+    # range: the local copies of the oracle's global lc3_* symbols, and the copy's instance of
+    # every static both copies have; LTO places some statics, e.g. its FFT, before the lc3_* ones).
     [ "${C:-}" = 1 ] && [ $build = avx2 ] || continue
     [ "$crate" = lc3 ] || { echo "perf: C=1 needs CRATE=lc3 (a renamed C copy in the bench)" >&2; exit 1; }
-    read -r lo hi < <(nm "$exe" | awk '$2 == "T" && $3 ~ /^lc3_/ {g[$3] = 1} $2 == "t" {l[$3] = $1}
-        END {lo = "z"; hi = ""; for (n in g) if (n in l) {if (l[n] < lo) lo = l[n]; if (l[n] > hi) hi = l[n]}
+    read -r lo hi < <(nm "$exe" | awk '$2 == "T" && $3 ~ /^lc3_/ {g[$3] = 1; if ($1 > gmax) gmax = $1}
+        $2 == "t" {n[$3]++; a[$3, n[$3]] = $1}
+        END {lo = "z"; hi = ""
+             for (k in n) if (k in g || n[k] == 2) {
+                 x = (k in g) ? a[k, 1] : (a[k, 1] > a[k, 2] ? a[k, 1] : a[k, 2])
+                 if (!(k in g) && x < gmax) continue  # the copy sits above the oracle
+                 if (x < lo) lo = x; if (x > hi) hi = x }
              print lo, hi}')
     [ "$lo" != z ] || { echo "perf: no fast liblc3 copy in the bench (see liblc3-sys build warnings)" >&2; exit 1; }
     "$perf" report -i target/perf.data --no-children --sort sym -v 2>/dev/null | grep -v '^#' |

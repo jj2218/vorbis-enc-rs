@@ -6,7 +6,8 @@ on:
     branches: [main]
 
 # `check`: what builds without the downloaded oracle and test items (guard, format, the
-# library on x86-64 and aarch64 and at its minimum Rust version, docs, the package). `test`:
+# library on x86-64 and aarch64 and at its minimum Rust version, docs, the package and its tests
+# from the `.crate`). `test`:
 # the tests against aoTuV (fetched from crates.io, SHA-pinned) on the ETSI test items,
 # downloads cached by their fetch scripts' hash.
 jobs:
@@ -21,7 +22,7 @@ jobs:
       - run: cargo clippy -p vorbis-enc --lib --locked -- -D warnings
       - run: cargo clippy -p vorbis-enc --lib --locked --target aarch64-unknown-linux-gnu -- -D warnings
       - run: RUSTDOCFLAGS="-D warnings" cargo doc -p vorbis-enc --no-deps --locked
-      - run: cargo package -p vorbis-enc --locked
+      - run: bash scripts/package-test.sh vorbis-enc
   test:
     runs-on: ubuntu-latest
     steps:
