@@ -1,0 +1,5 @@
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+# aarch64: `just lint` type-checks the non-x86 build (the SIMD kernels' array forms)
+targets = ["aarch64-unknown-linux-gnu"]

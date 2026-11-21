@@ -1,0 +1,33 @@
+[package]
+name = "vorbis-fuzz"
+version = "0.0.0"
+description = "cargo-fuzz targets for vorbis (nightly, `just fuzz` only; not part of the stable workspace)"
+publish = false
+edition = "2024"
+license = "BSD-3-Clause"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+vorbis-enc = { path = "../../crates/vorbis-enc" }
+aotuv-sys = { path = "../../crates/aotuv-sys" }
+lewton = "0.10.2"
+
+# Its own workspace: kept out of the stable one (`just check`, CI).
+[workspace]
+
+[[bin]]
+name = "vorbis_encode_vs_c"
+path = "fuzz_targets/vorbis_encode_vs_c.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "vorbis_encode_api"
+path = "fuzz_targets/vorbis_encode_api.rs"
+test = false
+doc = false
+bench = false

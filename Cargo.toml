@@ -1,0 +1,36 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+# The oldest Rust that builds every codec crate (let-chains, `as_chunks`), checked by `just msrv`.
+rust-version = "1.88"
+repository = "https://github.com/jj2218/vorbis-enc-rs"
+
+[workspace.lints.rust]
+# Safe by default. Only the AVX2 dispatch (each codec's src/simd.rs) and cfg(test) C oracles opt in.
+unsafe_code = "deny"
+missing_docs = "warn"
+# Every public type: `Debug` (API guideline C-DEBUG), so a user's `#[derive(Debug)]` compiles.
+missing_debug_implementations = "warn"
+# `--cfg portable` compiles out every crate's AVX2 dispatch (`src/simd.rs`);
+# `--cfg amr_nb_arrays` (AMR-NB) runs its SSE2 kernels' array forms (the non-x86 bodies) on x86; `just test`.
+# `--cfg codec_stages`: each codec's stage timers (`BENCH=stages just bench`).
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(portable)", "cfg(amr_nb_arrays)", "cfg(codec_stages)"] }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# Tests run optimised: the debug passes ran the conformance vectors at -O0 (~6.5 min each).
+# Overflow checks and debug assertions stay on (they are separate settings).
+[profile.dev]
+opt-level = 2
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
+[profile.bench]
+inherits = "release"
+debug = true

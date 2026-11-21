@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# `check`: what builds without the downloaded oracle and test items (guard, format, the
+# library on x86-64 and aarch64 and at its minimum Rust version, docs, the package). `test`:
+# the tests against aoTuV (fetched from crates.io, SHA-pinned) on the ETSI test items,
+# downloads cached by their fetch scripts' hash.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Installs the toolchain, components and targets pinned in rust-toolchain.toml.
+      - run: rustup toolchain install
+      - uses: extractions/setup-just@v4
+      - run: just rules fmt-check msrv
+      - run: cargo clippy -p vorbis-enc --lib --locked -- -D warnings
+      - run: cargo clippy -p vorbis-enc --lib --locked --target aarch64-unknown-linux-gnu -- -D warnings
+      - run: RUSTDOCFLAGS="-D warnings" cargo doc -p vorbis-enc --no-deps --locked
+      - run: cargo package -p vorbis-enc --locked
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup toolchain install
+      - uses: extractions/setup-just@v4
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: downloads-${{ hashFiles('scripts/aotuv.sh', 'scripts/lc3plus.sh', 'scripts/fetch.sh') }}
+      - run: just test

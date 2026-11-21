@@ -1,0 +1,6 @@
+/target/
+/fuzz/*/target/
+/fuzz/*/artifacts/
+/fuzz/*/corpus/
+# Downloaded oracle and test items: aoTuV and libvorbis, the ETSI LC3plus items (input audio only). Never commit.
+/.cache

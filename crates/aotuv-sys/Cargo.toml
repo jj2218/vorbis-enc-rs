@@ -1,0 +1,15 @@
+[package]
+name = "aotuv-sys"
+version = "0.0.0"
+description = "Test/bench oracle only: aoTuV b6.03 (libvorbis 1.3.7 + libogg 1.3.5 framing, BSD-3) from the pinned aotuv_lancer_vorbis_sys 0.1.6 sources in .cache/aotuv, strict IEEE float without Lancer's SIMD; on x86-64 also Lancer as vorbis_rs builds it"
+publish = false
+edition.workspace = true
+license = "BSD-3-Clause"
+repository.workspace = true
+
+[build-dependencies]
+cc = "1"
+
+# FFI to C: deliberately without the workspace lints (unsafe_code = "deny"); the empty table
+# says so and silences cargo's missing-lints-inheritance warning.
+[lints]

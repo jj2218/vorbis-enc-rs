@@ -1,0 +1,24 @@
+[package]
+name = "vorbis-enc"
+version = "0.1.0"
+description = "A Vorbis encoder in pure Rust: a port of aoTuV, producing exactly the same files as aoTuV's reference build"
+keywords = ["vorbis", "ogg", "encoder", "audio", "aotuv"]
+categories = ["multimedia::audio", "multimedia::encoding", "encoding"]
+readme = "README.md"
+# The tests and benches need the C oracle and test items (dev-only path crates): not packaged.
+exclude = ["tests/", "benches/"]
+edition.workspace = true
+rust-version.workspace = true
+license = "BSD-3-Clause"
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+aotuv-sys = { path = "../aotuv-sys" }
+lewton = "0.10.2"
+
+[[bench]]
+name = "codec"
+harness = false
